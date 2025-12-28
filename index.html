@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Controle Financeiro</title>
+    <style>
+
+        .formulario {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+
+        input, select {
+            width: 100%;
+            height: 44px;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            background-color: #222;
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 12px;
+            margin-top: 10px;
+            width: 100%;
+            border-radius: 6px;
+            border: none;
+            background-color: #4caf50;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #43a047;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #1f1f1f;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #2a2a2a;
+        }
+
+        tr:nth-child(even) {
+            background-color: #252525;
+        }
+        
+        .resumo {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .card {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .receita {background-color: #2e7d32;}
+        .despesa {background-color: #c62828;}
+        .saldo {background-color: #1565c0;}
+
+        @media (max-width: 600px) {
+            .resumo {
+                flex-direction: column;
+            }
+        }
+
+        .filtros {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+    <h1>Controle Financeiro</h1>
+
+    <h3>Nova Movimentação</h3>
+
+    <div class="formulario">
+        <select id="tipo">
+            <option value="Receita">Receita</option>
+            <option value="Despesa">Despesa</option>
+        </select>
+
+        <input type="date" id="data">
+        <input type="number" id="valor" placeholder="Valor">
+        <input type="text" id="descricao" placeholder="Descrição">
+
+        <button onclick="adicionar()">Adicionar</button>
+
+    </div>
+
+    <h3>Filtro</h3>
+
+    <div class="filtros">
+        <select id="filtroMes" onchange="aplicarFiltro()">
+            <option value="">Todos os Meses</option>
+            <option value="01">Janeiro</option>
+            <option value="02">Fevereiro</option>
+            <option value="03">Março</option>
+            <option value="04">Abril</option>
+            <option value="05">Maio</option>
+            <option value="06">Junho</option>
+            <option value="07">Julho</option>
+            <option value="08">Agosto</option>
+            <option value="09">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+        </select>
+
+        <select id="filtroAno" onchange="aplicarFiltro()">
+            <option value="">Todos os Anos</option>
+        </select>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Descrição</th>
+            </tr>
+        </thead> 
+        <tbody id="tabela"></tbody>
+    </table>
+
+    <h3>Resumo</h3>
+
+    <div class="resumo">
+        <div class="card receita">
+            Receitas <br>
+            R$ <span id="totalReceitas">0</span>
+        </div>
+
+        <div class="card despesa">
+            Despesas <br>
+            R$ <span id="totalDespesas">0</span>
+        </div>
+
+        <div class="card saldo">
+            Saldo <br>
+            R$ <span id="saldo">0</span>
+        </div>
+    </div>
+
+    <script>
+        let movimentacoes = JSON.parse(localStorage.getItem("movimentacoes")) || [];
+        let movimentacoesFiltradas = [];
+
+        function carregarAnos() {
+            const selectAno = document.getElementById("filtroAno");
+            selectAno.innerHTML = '<option value="">Todos os Anos</option>';
+            
+            const anos = [...new Set(movimentacoes.map(m => m.data.substring(0, 4)))];
+
+            anos.forEach(ano => {
+                const option = document.createElement("option");
+                option.value = ano;
+                option.text = ano;
+                selectAno.appendChild(option);
+            });
+        }
+
+        function aplicarFiltro() {
+            const mes = document.getElementById("filtroMes").value;
+            const ano = document.getElementById("filtroAno").value;
+
+            movimentacoesFiltradas = movimentacoes.filter(item => {
+                const itemMes = item.data.substring(5, 7);
+                const itemAno = item.data.substring(0, 4);
+
+                const filtroMes = mes === "" || itemMes === mes;
+                const filtroAno = ano === "" || itemAno === ano;
+
+                return filtroMes && filtroAno;
+            })
+
+            atualizarTabela();
+            calcularTotais();
+        }
+
+        function adicionar() {
+            const tipo = document.getElementById("tipo").value;
+            const data = document.getElementById("data").value;
+            const valor = document.getElementById("valor").value;
+            const descricao = document.getElementById("descricao").value;
+
+            movimentacoes.push({ tipo, data, valor, descricao });
+
+            localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
+
+            carregarAnos();
+            aplicarFiltro();
+            atualizarTabela();
+            calcularTotais();
+        }
+
+        function atualizarTabela() {
+            const tabela = document.getElementById("tabela");
+            tabela.innerHTML = "";
+
+            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
+
+            lista.forEach((item, index) => {
+                tabela.innerHTML += `
+                    <tr>
+                        <td>${item.tipo}</td>
+                        <td>${item.data}</td>
+                        <td>R$ ${item.valor}</td>
+                        <td>${item.descricao}</td>
+                        <td>
+                            <button onclick="excluir(${index})">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function calcularTotais() {
+            let totalReceitas = 0;
+            let totalDespesas = 0;
+
+            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
+
+            lista.forEach(item => {
+                const valor = Number(item.valor);
+
+                if (item.tipo === "Receita") {
+                    totalReceitas += valor;
+                } else {
+                    totalDespesas += valor;
+                }
+            });
+
+        document.getElementById("totalReceitas").innerText = totalReceitas.toFixed(2);
+        document.getElementById("totalDespesas").innerText = totalDespesas.toFixed(2);
+        document.getElementById("saldo").innerText = (totalReceitas - totalDespesas).toFixed(2);
+        }
+
+        function excluir(indice) {
+            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
+            const itemParaExcluir = lista[indice];
+
+            movimentacoes = movimentacoes.filter(item => item !== itemParaExcluir);
+
+            localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
+        
+        aplicarFiltro();
+        atualizarTabela();
+        calcularTotais();
+        }
+
+        movimentacoesFiltradas = movimentacoes;
+        carregarAnos();
+        aplicarFiltro();
+        atualizarTabela();
+        calcularTotais();
+
+    </script>
+    </div>
+</body>
+</html>
