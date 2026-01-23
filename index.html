@@ -244,11 +244,15 @@
 
             fetch(API_URL, {
                 method: "POST",
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ tipo, data, valor, descricao })
             })
-            .then(() => {
+            .then(res => res.text())
+            .then(resposta => {
+                console.log("Resposta do servidor:", resposta);
                 carregarDados();
-            });
+        })
+        .catch(err => console.error("Erro:", err));
         }
 
         function atualizarTabela() {
@@ -306,4 +310,5 @@
     </div>
 </body>
 </html>
+
 
