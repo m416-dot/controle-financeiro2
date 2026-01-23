@@ -187,7 +187,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzsLJauvm1FVapgJeggTYKzqdUMJddNcJIOaCFqIHVPwpihgcPdYETWjKEjqxVF5Q6f/exec"
+        const API_URL = "https://script.google.com/macros/s/AKfycbwxTdWoMVL_d9D7Saf0gWMDf7IkoGugCh-83bPFqLX2gv1youFopVZaGkC2ZxowaAcM/exec"
         let movimentacoes = [];
         let movimentacoesFiltradas = [];
 
@@ -242,17 +242,18 @@
             const valor = document.getElementById("valor").value;
             const descricao = document.getElementById("descricao").value;
 
+            const payload = JSON.stringify({ tipo, data, valor, descricao });
+
             fetch(API_URL, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ tipo, data, valor, descricao })
-            })
-            .then(res => res.text())
-            .then(resposta => {
-                console.log("Resposta do servidor:", resposta);
-                carregarDados();
+                body: payload
         })
-        .catch(err => console.error("Erro:", err));
+        .then(res => res.text())
+        .then(resposta => {
+            console.log("Resposta:", resposta);
+        carregarDados();
+            })
+            .catch(err => console.error(err));
         }
 
         function atualizarTabela() {
@@ -310,5 +311,6 @@
     </div>
 </body>
 </html>
+
 
 
