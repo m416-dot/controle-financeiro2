@@ -157,11 +157,11 @@
     <table>
         <thead>
             <tr>
-                <th>Ações</th>
                 <th>Tipo</th>
                 <th>Data</th>
                 <th>Valor</th>
                 <th>Descrição</th>
+                <th>Ações</th>
             </tr>
         </thead> 
         <tbody id="tabela"></tbody>
@@ -268,7 +268,7 @@
                         <td>R$ ${item.valor}</td>
                         <td>${item.descricao}</td>
                         <td>
-                            <button onclick="excluir(${index})">Excluir</button>
+                            <button onclick="excluir('${item.id}')">Excluir</button>
                         </td>
                     </tr>
                 `;
@@ -296,11 +296,19 @@
         document.getElementById("saldo").innerText = (totalReceitas - totalDespesas).toFixed(2);
         }
 
-        function excluir(indice) {
-            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
-            const itemParaExcluir = lista[indice];
+        function excluir(id) {
+            if (!confirm("Deseja realmente excluir este registro?")) return;
 
-        carregarDados();
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "delete",
+                    id: id
+        })
+            .then(res => res.text())
+            .then(() => {
+                carregarDados();
+            });
         }
 
         carregarDados();
@@ -309,6 +317,7 @@
     </div>
 </body>
 </html>
+
 
 
 
