@@ -157,6 +157,7 @@
     <table>
         <thead>
             <tr>
+                <th>Ações</th>
                 <th>Tipo</th>
                 <th>Data</th>
                 <th>Valor</th>
@@ -186,8 +187,22 @@
     </div>
 
     <script>
-        let movimentacoes = JSON.parse(localStorage.getItem("movimentacoes")) || [];
+        const API_URL = "https://script.google.com/macros/s/AKfycbzsLJauvm1FVapgJeggTYKzqdUMJddNcJIOaCFqIHVPwpihgcPdYETWjKEjqxVF5Q6f/exec"
+        let movimentacoes = [];
         let movimentacoesFiltradas = [];
+
+        function carregarDados(){
+            fetch(API_URL)
+                .then(res => res.json())
+                .then(dados => {
+                    movimentacoes = dados;
+                    movimentacoesFiltradas = movimentacoes;
+                    carregarAnos();
+                    aplicarFiltro();
+                    atualizarTabela();
+                    calcularTotais();
+                });
+        }
 
         function carregarAnos() {
             const selectAno = document.getElementById("filtroAno");
@@ -227,14 +242,13 @@
             const valor = document.getElementById("valor").value;
             const descricao = document.getElementById("descricao").value;
 
-            movimentacoes.push({ tipo, data, valor, descricao });
-
-            localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
-
-            carregarAnos();
-            aplicarFiltro();
-            atualizarTabela();
-            calcularTotais();
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ tipo, data, valor, descricao })
+            })
+            .then(() => {
+                carregarDados();
+            });
         }
 
         function atualizarTabela() {
@@ -283,22 +297,13 @@
             const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
             const itemParaExcluir = lista[indice];
 
-            movimentacoes = movimentacoes.filter(item => item !== itemParaExcluir);
-
-            localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
-        
-        aplicarFiltro();
-        atualizarTabela();
-        calcularTotais();
+        carregarDados();
         }
 
-        movimentacoesFiltradas = movimentacoes;
-        carregarAnos();
-        aplicarFiltro();
-        atualizarTabela();
-        calcularTotais();
+        carregarDados();
 
     </script>
     </div>
 </body>
 </html>
+
