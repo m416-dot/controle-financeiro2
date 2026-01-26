@@ -161,7 +161,6 @@
                 <th>Data</th>
                 <th>Valor</th>
                 <th>Descrição</th>
-                <th>Ação</th>
             </tr>
         </thead> 
         <tbody id="tabela"></tbody>
@@ -186,105 +185,120 @@
         </div>
     </div>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwvrMXWk0Gb_6Qg3C1JUt2zUErpZHPj4jyzKQ9Ejl_0B9i1bmxTIdz2slGo_AW72NIT/exec";
+    <script>
+        let movimentacoes = JSON.parse(localStorage.getItem("movimentacoes")) || [];
+        let movimentacoesFiltradas = [];
 
-let movimentacoes = [];
-let movimentacoesFiltradas = [];
+        function carregarAnos() {
+            const selectAno = document.getElementById("filtroAno");
+            selectAno.innerHTML = '<option value="">Todos os Anos</option>';
+            
+            const anos = [...new Set(movimentacoes.map(m => m.data.substring(0, 4)))];
 
-function carregarDados() {
-    fetch(API_URL)
-        .then(res => res.json())
-        .then(dados => {
-            movimentacoes = dados;
-            movimentacoesFiltradas = dados;
+            anos.forEach(ano => {
+                const option = document.createElement("option");
+                option.value = ano;
+                option.text = ano;
+                selectAno.appendChild(option);
+            });
+        }
+
+        function aplicarFiltro() {
+            const mes = document.getElementById("filtroMes").value;
+            const ano = document.getElementById("filtroAno").value;
+
+            movimentacoesFiltradas = movimentacoes.filter(item => {
+                const itemMes = item.data.substring(5, 7);
+                const itemAno = item.data.substring(0, 4);
+
+                const filtroMes = mes === "" || itemMes === mes;
+                const filtroAno = ano === "" || itemAno === ano;
+
+                return filtroMes && filtroAno;
+            })
+
+            atualizarTabela();
+            calcularTotais();
+        }
+
+        function adicionar() {
+            const tipo = document.getElementById("tipo").value;
+            const data = document.getElementById("data").value;
+            const valor = document.getElementById("valor").value;
+            const descricao = document.getElementById("descricao").value;
+
+            movimentacoes.push({ tipo, data, valor, descricao });
+
+            localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
+
             carregarAnos();
             aplicarFiltro();
-        });
-}
+            atualizarTabela();
+            calcularTotais();
+        }
 
-function adicionar() {
-    const tipo = document.getElementById("tipo").value;
-    const data = document.getElementById("data").value;
-    const valor = document.getElementById("valor").value;
-    const descricao = document.getElementById("descricao").value;
+        function atualizarTabela() {
+            const tabela = document.getElementById("tabela");
+            tabela.innerHTML = "";
 
-    fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ tipo, data, valor, descricao })
-    })
-    .then(() => carregarDados());
-}
+            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
 
-function excluir(id) {
-    fetch(`${API_URL}?id=${id}`, { method: "DELETE" })
-        .then(() => carregarDados());
-}
+            lista.forEach((item, index) => {
+                tabela.innerHTML += `
+                    <tr>
+                        <td>${item.tipo}</td>
+                        <td>${item.data}</td>
+                        <td>R$ ${item.valor}</td>
+                        <td>${item.descricao}</td>
+                        <td>
+                            <button onclick="excluir(${index})">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
 
-function carregarAnos() {
-    const selectAno = document.getElementById("filtroAno");
-    selectAno.innerHTML = '<option value="">Todos os Anos</option>';
+        function calcularTotais() {
+            let totalReceitas = 0;
+            let totalDespesas = 0;
 
-    const anos = [...new Set(movimentacoes.map(m => m.data.substring(0, 4)))];
-    anos.forEach(ano => {
-        const option = document.createElement("option");
-        option.value = ano;
-        option.text = ano;
-        selectAno.appendChild(option);
-    });
-}
+            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
 
-function aplicarFiltro() {
-    const mes = document.getElementById("filtroMes").value;
-    const ano = document.getElementById("filtroAno").value;
+            lista.forEach(item => {
+                const valor = Number(item.valor);
 
-    movimentacoesFiltradas = movimentacoes.filter(item => {
-        const itemMes = item.data.substring(5, 7);
-        const itemAno = item.data.substring(0, 4);
-        return (mes === "" || itemMes === mes) &&
-               (ano === "" || itemAno === ano);
-    });
+                if (item.tipo === "Receita") {
+                    totalReceitas += valor;
+                } else {
+                    totalDespesas += valor;
+                }
+            });
 
-    atualizarTabela();
-    calcularTotais();
-}
+        document.getElementById("totalReceitas").innerText = totalReceitas.toFixed(2);
+        document.getElementById("totalDespesas").innerText = totalDespesas.toFixed(2);
+        document.getElementById("saldo").innerText = (totalReceitas - totalDespesas).toFixed(2);
+        }
 
-function atualizarTabela() {
-    const tabela = document.getElementById("tabela");
-    tabela.innerHTML = "";
+        function excluir(indice) {
+            const lista = movimentacoesFiltradas.length ? movimentacoesFiltradas : movimentacoes;
+            const itemParaExcluir = lista[indice];
 
-    movimentacoesFiltradas.forEach(item => {
-        tabela.innerHTML += `
-            <tr>
-                <td>${item.tipo}</td>
-                <td>${item.data}</td>
-                <td>R$ ${item.valor}</td>
-                <td>${item.descricao}</td>
-                <td>
-                    <button onclick="excluir(${item.id})">Excluir</button>
-                </td>
-            </tr>
-        `;
-    });
-}
+            movimentacoes = movimentacoes.filter(item => item !== itemParaExcluir);
 
-function calcularTotais() {
-    let receitas = 0;
-    let despesas = 0;
+            localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
+        
+        aplicarFiltro();
+        atualizarTabela();
+        calcularTotais();
+        }
 
-    movimentacoesFiltradas.forEach(item => {
-        const v = Number(item.valor);
-        if (item.tipo === "Receita") receitas += v;
-        else despesas += v;
-    });
+        movimentacoesFiltradas = movimentacoes;
+        carregarAnos();
+        aplicarFiltro();
+        atualizarTabela();
+        calcularTotais();
 
-    document.getElementById("totalReceitas").innerText = receitas.toFixed(2);
-    document.getElementById("totalDespesas").innerText = despesas.toFixed(2);
-    document.getElementById("saldo").innerText = (receitas - despesas).toFixed(2);
-}
-
-carregarDados();
-</script>
+    </script>
     </div>
 </body>
 </html>
